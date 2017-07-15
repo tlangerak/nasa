@@ -1,5 +1,4 @@
 datetime
 pyrebase
 urllib
-re
 flask
