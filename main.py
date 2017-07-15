@@ -4,7 +4,7 @@ import time
 import datetime
 import pyrebase
 import urllib
-import re
+import regex as re
 from flask import Flask
 
 
