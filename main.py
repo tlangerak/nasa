@@ -5,7 +5,10 @@ import datetime
 import pyrebase
 import urllib
 import re
+from flask import Flask
 
+
+app = Flask(__name__)
 
 ## -------UPDATE FUNCTIONS---------- ##
 def update_field(field_id, db, user):
@@ -150,7 +153,7 @@ def upload_field(days_since_irrigation, IR_list, HP_list, HP, RF_list, RF, ET_li
 
     return
 
-
+@app.route('/api/update/single_field/<int:field_id>', methods=['GET'])
 def update_single_field(field_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -166,9 +169,9 @@ def update_single_field(field_id):
     db = firebase.database()
 
     update_field(field_id, db, user)
-    return
+    return "update for field " +str(field_id)+" successful"
 
-
+@app.route('/api/update/field_user/<int:user_id>', methods=['GET'])
 def update_field_user(user_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -187,9 +190,9 @@ def update_field_user(user_id):
     ids = get_field_user(user_id, db, user)
     for field_id in ids:
         update_field(field_id, db, user)
-    return
+    return "all field for user " + str(user_id) + "updated"
 
-
+@app.route('/api/update/all_fields', methods=['GET'])
 def update_all():
     ## setup connction to database
     config = {
@@ -210,7 +213,7 @@ def update_all():
 
     for field_id in ids:
         update_field(field_id, db, user)
-    return
+    return "all fields updated succesfully"
 
 
 ## ------- PREDICT FUNCTIONS ---------- ##
@@ -325,7 +328,7 @@ def upload_prediction(HP_pre_list, ET_pre_list, RF_pre_list, RO_pre_list, DP_pre
     )
     return
 
-
+@app.route('/api/predict/single_field/<int:field_id>', methods=['GET'])
 def predict_single_field(field_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -341,9 +344,9 @@ def predict_single_field(field_id):
     db = firebase.database()
 
     predict_field(field_id, db, user)
-    return
+    return "prediction for field " +str(field_id)+ " successful"
 
-
+@app.route('/api/predict/field_user/<int:user_id>', methods=['GET'])
 def predict_field_user(user_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -362,9 +365,9 @@ def predict_field_user(user_id):
     ids = get_field_user(user_id, db, user)
     for field_id in ids:
         predict_field(field_id, db, user)
-    return
+    return "prediction for user " +str(user_id)+ " successful"
 
-
+@app.route('/api/predict/all_fields', methods=['GET'])
 def predict_all():
     ## setup connction to database
     config = {
@@ -385,7 +388,7 @@ def predict_all():
 
     for field_id in ids:
         predict_field(field_id, db, user)
-    return
+    return "all fields predicted succesfully"
 
 
 ## ------- HELPER FUNCTIONS ---------- ##
@@ -427,6 +430,7 @@ def get_data_from_field(field_id, db, user):
     year_irrigation = db.child('main').child(field_id).child("year_irrigation").get(user['idToken']).val()
     month_irrigation = db.child('main').child(field_id).child("month_irrigation").get(user['idToken']).val()
     day_irrigation = db.child('main').child(field_id).child("day_irrigation").get(user['idToken']).val()
+
     date_irrigation = datetime.date(year_irrigation, month_irrigation, day_irrigation)
 
     dike_height = db.child('main').child(field_id).child("dike_height").get(user['idToken']).val()
@@ -489,6 +493,3 @@ def cm_to_l(area, cm):
     l = dc * sq_dc
     return l
 
-
-#update_all()
-#predict_all()
