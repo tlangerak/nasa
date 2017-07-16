@@ -7,8 +7,8 @@ import urllib
 import re
 from flask import Flask, jsonify
 
-app = Flask(__name__)
 
+app = Flask(__name__)
 
 ## -------UPDATE FUNCTIONS---------- ##
 def update_field(field_id, db, user):
@@ -23,17 +23,10 @@ def update_field(field_id, db, user):
     desired_depth_chart = data[11]
     critical_depth_chart = data[12]
     soil = data[13]  # 0 is clay, 5 is sandy
-
-    if days_since_transplant > len(desired_depth_chart) or days_since_transplant > len(critical_depth_chart):
-        days_since_transplant = len(desired_depth_chart)
-
     desired_depth = desired_depth_chart[days_since_transplant]
     critical_depth = critical_depth_chart[days_since_transplant]
     IR_rec_list = data[14]
     area = data[15]
-
-    if days_since_transplant > len(desired_depth_chart) or days_since_transplant > len(critical_depth_chart):
-        days_since_transplant = len(desired_depth_chart)
 
     # http://www.fao.org/docrep/t7202e/t7202e07.htm
     DP = depthperlocation(soil)
@@ -86,11 +79,9 @@ def get_rain(longitude, latitude):
     rain = float(rain) / 10.
     return rain
 
-
 def depthperlocation(soil):
     dp = (float(soil) / 10.) + 0.2
     return dp
-
 
 # the water that is sucked up by plants. net_rad is an estimate.
 def evapotranspiration(longitude, latitude):
@@ -137,13 +128,13 @@ def upload_field(days_since_irrigation, IR_list, HP_list, HP, RF_list, RF, ET_li
     RO_list.append(round(RO, 5))
     RO_list = cm_to_l_list(area, RO_list)
     del IR_rec_list[0]
-    IR_rec_list.append(round(RO, 5))
+    IR_rec_list.append(round(IR, 5))
     IR_rec_list = cm_to_l_list(area, IR_rec_list)
 
     if days_since_irrigation > 0:
         del IR_list[0]
         IR_list.append(0)
-        IR_list = cm_to_l_list(area, IR_rec_list)
+        IR_list = cm_to_l_list(area, IR_list)
 
     IR = round(cm_to_l(area, IR), 5)
     HP = round(HP, 5)
@@ -162,7 +153,6 @@ def upload_field(days_since_irrigation, IR_list, HP_list, HP, RF_list, RF, ET_li
 
     return
 
-
 @app.route('/api/update/single_field/<string:field_id>', methods=['GET'])
 def update_single_field(field_id):
     config = {
@@ -179,8 +169,9 @@ def update_single_field(field_id):
     db = firebase.database()
 
     update_field(field_id, db, user)
-    return "update for field " + str(field_id) + " successful"
-
+    response = jsonify({'field_id': field_id})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/api/update/field_user/<string:user_id>', methods=['GET'])
 def update_field_user(user_id):
@@ -201,8 +192,9 @@ def update_field_user(user_id):
     ids = get_field_user(user_id, db, user)
     for field_id in ids:
         update_field(field_id, db, user)
-    return "all field for user " + str(user_id) + "updated"
-
+    response = jsonify({'user_id': user_id})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/api/update/all_fields', methods=['GET'])
 def update_all():
@@ -225,7 +217,9 @@ def update_all():
 
     for field_id in ids:
         update_field(field_id, db, user)
-    return "all fields updated succesfully"
+    response = jsonify({'all_fields': 'updated succesfully'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 
 ## ------- PREDICT FUNCTIONS ---------- ##
@@ -248,7 +242,7 @@ def predict_field(field_id, db, user):
     DP_pre_list = data[19]
     RO_pre_list = data[20]
 
-    for day in range(len(HP_pre_list)):
+    for day in range(5):
         DP = (float(soil) / 10.) + 0.2
         ET = evapotranspiration_forecast(longitude, latitude, day)
         RF = get_rain_forecast(longitude, latitude, day)
@@ -313,7 +307,7 @@ def evapotranspiration_forecast(longitude, latitude, day):
 
 
 def get_rain_forecast(longitude, latitude, day):
-    pre = datetime.datetime.today() + datetime.timedelta(day + 1)
+    pre = datetime.datetime.today() + datetime.timedelta(day)
     url = 'https://darksky.net/details/' + str(longitude) + ',' + str(latitude) + '/' + str(pre.year) + '-' + str(
         pre.month) + '-' + str(pre.day) + '/si24/en'
     f = urllib.urlopen(url)
@@ -325,9 +319,6 @@ def get_rain_forecast(longitude, latitude, day):
 
 
 def upload_prediction(HP_pre_list, ET_pre_list, RF_pre_list, RO_pre_list, DP_pre_list, field_id, db, user, area):
-    ET_pre_list = cm_to_l_list(area, ET_pre_list)
-    RO_pre_list = cm_to_l_list(area, RO_pre_list)
-    DP_pre_list = cm_to_l_list(area, DP_pre_list)
 
     db.child("main").child(field_id).update({
         "HP_pre_list": HP_pre_list,
@@ -339,7 +330,6 @@ def upload_prediction(HP_pre_list, ET_pre_list, RF_pre_list, RO_pre_list, DP_pre
         user['idToken']
     )
     return
-
 
 @app.route('/api/predict/single_field/<string:field_id>', methods=['GET'])
 def predict_single_field(field_id):
@@ -357,8 +347,9 @@ def predict_single_field(field_id):
     db = firebase.database()
 
     predict_field(field_id, db, user)
-    return "prediction for field " + str(field_id) + " successful"
-
+    response = jsonify({'field_id': field_id})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/api/predict/field_user/<string:user_id>', methods=['GET'])
 def predict_field_user(user_id):
@@ -379,8 +370,9 @@ def predict_field_user(user_id):
     ids = get_field_user(user_id, db, user)
     for field_id in ids:
         predict_field(field_id, db, user)
-    return "prediction for user " + str(user_id) + " successful"
-
+    response = jsonify({'user_id': user_id})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/api/predict/all_fields', methods=['GET'])
 def predict_all():
@@ -403,7 +395,9 @@ def predict_all():
 
     for field_id in ids:
         predict_field(field_id, db, user)
-    return "all fields predicted succesfully"
+    response = jsonify({'all_fields': 'predicted'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 
 ## ------- HELPER FUNCTIONS ---------- ##
@@ -470,10 +464,12 @@ def get_data_from_field(field_id, db, user):
     RF_pre_list = db.child('main').child(field_id).child("RF_pre_list").get(user['idToken']).val()
     DP_pre_list = db.child('main').child(field_id).child("DP_pre_list").get(user['idToken']).val()
     RO_pre_list = db.child('main').child(field_id).child("RO_pre_list").get(user['idToken']).val()
-    area = float(area) * 10000. +1
+
     return longitude, latitude, date_transplant, date_irrigation, float(dike_height), float(
-        HP), HP_list, RF_list, ET_list, DP_list, RO_list, desired_depth_chart, critical_depth_chart, int(
-        soil), IR_rec_list, float(area), HP_pre_list, ET_pre_list, RF_pre_list, DP_pre_list, RO_pre_list, IR_list
+        HP), HP_list, RF_list, ET_list, DP_list, \
+           RO_list, desired_depth_chart, critical_depth_chart, int(soil), IR_rec_list, float(
+        area), HP_pre_list, ET_pre_list, RF_pre_list, \
+           DP_pre_list, RO_pre_list, IR_list
 
 
 # area  in square meters, liters
@@ -506,12 +502,11 @@ def cm_to_l(area, cm):
     l = dc * sq_dc
     return l
 
-
 @app.route('/')
 def index():
     return "Hello, World!"
 
-
 if __name__ == '__main__':
     port = 8000  # the custom port you want
     app.run(host='0.0.0.0', port=port)
+

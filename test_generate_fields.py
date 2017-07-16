@@ -48,12 +48,12 @@ for id in ids:
 
     ET_list = []
     for i in range(30):
-        amount = random.randrange(80, 90, 1)
-        ET_list.append(150)
+        amount = random.randrange(20, 25, 1)*0.1
+        ET_list.append(amount)
 
     DP_list = []
     for i in range(30):
-        DP_list.append(250)
+        DP_list.append(0.5)
 
     RO_list = np.zeros(30)
     RO_list.tolist()
@@ -136,7 +136,7 @@ for id in ids:
             "soil_type": 3,
             "crop_type": "rice",
             "HP": HP,
-            "dike_height": 10,
+            "dike_height": dike_height,
             "HP_list": HP_list,
             "RF_list": RF_list,
             "ET_list": ET_list,
