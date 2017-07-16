@@ -4,11 +4,11 @@ import time
 import datetime
 import pyrebase
 import urllib
-import regex as re
-from flask import Flask
-
+import re
+from flask import Flask, jsonify
 
 app = Flask(__name__)
+
 
 ## -------UPDATE FUNCTIONS---------- ##
 def update_field(field_id, db, user):
@@ -23,10 +23,17 @@ def update_field(field_id, db, user):
     desired_depth_chart = data[11]
     critical_depth_chart = data[12]
     soil = data[13]  # 0 is clay, 5 is sandy
+
+    if days_since_transplant > len(desired_depth_chart) or days_since_transplant > len(critical_depth_chart):
+        days_since_transplant = len(desired_depth_chart)
+
     desired_depth = desired_depth_chart[days_since_transplant]
     critical_depth = critical_depth_chart[days_since_transplant]
     IR_rec_list = data[14]
     area = data[15]
+
+    if days_since_transplant > len(desired_depth_chart) or days_since_transplant > len(critical_depth_chart):
+        days_since_transplant = len(desired_depth_chart)
 
     # http://www.fao.org/docrep/t7202e/t7202e07.htm
     DP = depthperlocation(soil)
@@ -79,9 +86,11 @@ def get_rain(longitude, latitude):
     rain = float(rain) / 10.
     return rain
 
+
 def depthperlocation(soil):
     dp = (float(soil) / 10.) + 0.2
     return dp
+
 
 # the water that is sucked up by plants. net_rad is an estimate.
 def evapotranspiration(longitude, latitude):
@@ -153,7 +162,8 @@ def upload_field(days_since_irrigation, IR_list, HP_list, HP, RF_list, RF, ET_li
 
     return
 
-@app.route('/api/update/single_field/<int:field_id>', methods=['GET'])
+
+@app.route('/api/update/single_field/<string:field_id>', methods=['GET'])
 def update_single_field(field_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -169,9 +179,10 @@ def update_single_field(field_id):
     db = firebase.database()
 
     update_field(field_id, db, user)
-    return "update for field " +str(field_id)+" successful"
+    return "update for field " + str(field_id) + " successful"
 
-@app.route('/api/update/field_user/<int:user_id>', methods=['GET'])
+
+@app.route('/api/update/field_user/<string:user_id>', methods=['GET'])
 def update_field_user(user_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -191,6 +202,7 @@ def update_field_user(user_id):
     for field_id in ids:
         update_field(field_id, db, user)
     return "all field for user " + str(user_id) + "updated"
+
 
 @app.route('/api/update/all_fields', methods=['GET'])
 def update_all():
@@ -236,7 +248,7 @@ def predict_field(field_id, db, user):
     DP_pre_list = data[19]
     RO_pre_list = data[20]
 
-    for day in range(5):
+    for day in range(len(HP_pre_list)):
         DP = (float(soil) / 10.) + 0.2
         ET = evapotranspiration_forecast(longitude, latitude, day)
         RF = get_rain_forecast(longitude, latitude, day)
@@ -301,7 +313,7 @@ def evapotranspiration_forecast(longitude, latitude, day):
 
 
 def get_rain_forecast(longitude, latitude, day):
-    pre = datetime.datetime.today() + datetime.timedelta(day)
+    pre = datetime.datetime.today() + datetime.timedelta(day + 1)
     url = 'https://darksky.net/details/' + str(longitude) + ',' + str(latitude) + '/' + str(pre.year) + '-' + str(
         pre.month) + '-' + str(pre.day) + '/si24/en'
     f = urllib.urlopen(url)
@@ -328,7 +340,8 @@ def upload_prediction(HP_pre_list, ET_pre_list, RF_pre_list, RO_pre_list, DP_pre
     )
     return
 
-@app.route('/api/predict/single_field/<int:field_id>', methods=['GET'])
+
+@app.route('/api/predict/single_field/<string:field_id>', methods=['GET'])
 def predict_single_field(field_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -344,9 +357,10 @@ def predict_single_field(field_id):
     db = firebase.database()
 
     predict_field(field_id, db, user)
-    return "prediction for field " +str(field_id)+ " successful"
+    return "prediction for field " + str(field_id) + " successful"
 
-@app.route('/api/predict/field_user/<int:user_id>', methods=['GET'])
+
+@app.route('/api/predict/field_user/<string:user_id>', methods=['GET'])
 def predict_field_user(user_id):
     config = {
         "apiKey": "AIzaSyDbWlGG-aqzoePURjVEbAWeOVjXrqNXI_I",
@@ -365,7 +379,8 @@ def predict_field_user(user_id):
     ids = get_field_user(user_id, db, user)
     for field_id in ids:
         predict_field(field_id, db, user)
-    return "prediction for user " +str(user_id)+ " successful"
+    return "prediction for user " + str(user_id) + " successful"
+
 
 @app.route('/api/predict/all_fields', methods=['GET'])
 def predict_all():
@@ -455,12 +470,10 @@ def get_data_from_field(field_id, db, user):
     RF_pre_list = db.child('main').child(field_id).child("RF_pre_list").get(user['idToken']).val()
     DP_pre_list = db.child('main').child(field_id).child("DP_pre_list").get(user['idToken']).val()
     RO_pre_list = db.child('main').child(field_id).child("RO_pre_list").get(user['idToken']).val()
-
+    area = float(area) * 10000. +1
     return longitude, latitude, date_transplant, date_irrigation, float(dike_height), float(
-        HP), HP_list, RF_list, ET_list, DP_list, \
-           RO_list, desired_depth_chart, critical_depth_chart, int(soil), IR_rec_list, float(
-        area), HP_pre_list, ET_pre_list, RF_pre_list, \
-           DP_pre_list, RO_pre_list, IR_list
+        HP), HP_list, RF_list, ET_list, DP_list, RO_list, desired_depth_chart, critical_depth_chart, int(
+        soil), IR_rec_list, float(area), HP_pre_list, ET_pre_list, RF_pre_list, DP_pre_list, RO_pre_list, IR_list
 
 
 # area  in square meters, liters
@@ -493,3 +506,12 @@ def cm_to_l(area, cm):
     l = dc * sq_dc
     return l
 
+
+@app.route('/')
+def index():
+    return "Hello, World!"
+
+
+if __name__ == '__main__':
+    port = 8000  # the custom port you want
+    app.run(host='0.0.0.0', port=port)
