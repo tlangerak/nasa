@@ -444,9 +444,9 @@ def get_data_from_field(field_id, db, user):
     ## lists probably wont go correct
     HP_list = db.child('main').child(field_id).child("HP_list").get(user['idToken']).val()
     RF_list = db.child('main').child(field_id).child("RF_list").get(user['idToken']).val()
-    ET_list = l_to_cm_list(area, db.child('main').child(field_id).child("ET_list").get(user['idToken']).val())
-    DP_list = l_to_cm_list(area, db.child('main').child(field_id).child("DP_list").get(user['idToken']).val())
-    RO_list = l_to_cm_list(area, db.child('main').child(field_id).child("RO_list").get(user['idToken']).val())
+    ET_list = db.child('main').child(field_id).child("ET_list").get(user['idToken']).val()
+    DP_list = db.child('main').child(field_id).child("DP_list").get(user['idToken']).val()
+    RO_list = db.child('main').child(field_id).child("RO_list").get(user['idToken']).val()
     IR_list = l_to_cm_list(area, db.child('main').child(field_id).child("IR_list").get(user['idToken']).val())
     IR_rec_list = l_to_cm_list(area, db.child('main').child(field_id).child("IR_rec_list").get(user['idToken']).val())
     desired_depth_chart = db.child('main').child(field_id).child("desired_depth_chart").get(
