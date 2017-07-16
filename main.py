@@ -120,13 +120,10 @@ def upload_field(days_since_irrigation, IR_list, HP_list, HP, RF_list, RF, ET_li
     RF_list.append(round(RF, 5))
     del ET_list[0]
     ET_list.append(round(ET, 5))
-    ET_list = cm_to_l_list(area, ET_list)
     del DP_list[0]
     DP_list.append(round(DP, 5))
-    DP_list = cm_to_l_list(area, DP_list)
     del RO_list[0]
     RO_list.append(round(RO, 5))
-    RO_list = cm_to_l_list(area, RO_list)
     del IR_rec_list[0]
     IR_rec_list.append(round(IR, 5))
     IR_rec_list = cm_to_l_list(area, IR_rec_list)
@@ -319,7 +316,6 @@ def get_rain_forecast(longitude, latitude, day):
 
 
 def upload_prediction(HP_pre_list, ET_pre_list, RF_pre_list, RO_pre_list, DP_pre_list, field_id, db, user, area):
-
     db.child("main").child(field_id).update({
         "HP_pre_list": HP_pre_list,
         "ET_pre_list": ET_pre_list,
